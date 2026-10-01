@@ -1,0 +1,71 @@
+--1: 
+SELECT COUNT(*), 
+COUNT(DISTINCT (uniquepid) ) AS n_patients, 
+COUNT(DISTINCT (patientunitstayid)) AS n_icu_stays 
+FROM patient p; 
+
+--2:
+SELECT COUNT(*), 
+hospitaldischargestatus, 
+COUNT(hospitaldischargestatus) AS count 
+FROM patient p 
+GROUP BY hospitaldischargestatus 
+
+--3:
+SELECT age, 
+CASE
+	WHEN age = '> 89' THEN 90
+	WHEN age = '' THEN NULL
+	ELSE CAST (age AS integer)
+	END AS age_num
+FROM patient p 
+
+--4: 
+CREATE VIEW cohort AS WITH ranked AS (SELECT uniquepid, patientunitstayid, hospitaldischargeyear, hospitalid, gender, unitdischargeoffset,
+CASE 
+	WHEN age LIKE '>%' THEN 90
+	WHEN age = '' THEN NULL
+	ELSE CAST(age AS INTEGER)
+END AS age_num,
+CASE 
+	WHEN hospitaldischargestatus = 'Expired' THEN 1 ELSE 0
+END AS died,
+ROW_NUMBER() OVER(PARTITION BY uniquepid ORDER BY hospitaldischargeyear, patienthealthsystemstayid, unitvisitnumber) AS rn
+FROM patient p 
+WHERE hospitaldischargestatus <> ''
+ )
+SELECT *
+FROM ranked 
+WHERE rn = 1
+
+--5:
+SELECT COUNT(*) AS n, SUM(died) AS deaths,
+ROUND(100.0 * SUM(died) / COUNT(*), 1) AS pct_death
+FROM cohort
+
+--6:
+SELECT COUNT(*) AS n, SUM(died) AS deaths, ROUND(100.0 * SUM(died)/ COUNT(*), 1) AS mortality_percent,
+CASE 
+	WHEN age_num < 50 THEN 'under_50'
+	WHEN age_num BETWEEN 50 AND 64 THEN 'middle_age'
+	WHEN age_num BETWEEN 65 AND 79 THEN 'upper_middle_age'
+	WHEN age_num >=80 THEN 'geriatric'
+	ELSE 'unknown'
+END AS age_group
+FROM cohort
+GROUP BY age_group 
+ORDER BY min(age_num)
+
+--7a:
+SELECT COUNT(*) AS n, h.hospitalid, SUM(c.died) AS deaths, ROUND(100.0 * SUM(c.died)/COUNT(*), 1) AS mortality_percent FROM cohort c 
+JOIN hospital h ON c.hospitalid = h.hospitalid 
+GROUP BY h.hospitalid 
+ORDER BY mortality_percent DESC
+
+--7b: To check whether n_patients is capped at 10
+SELECT hospitalid,
+       COUNT(DISTINCT uniquepid) AS n_patients,
+       COUNT(*) AS n_stays
+FROM patient
+GROUP BY hospitalid
+ORDER BY n_patients DESC;
