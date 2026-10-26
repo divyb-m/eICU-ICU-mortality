@@ -9,7 +9,7 @@ Using only data from the first 24 hours of an ICU stay, can a simple model predi
 - **Source:** [eICU Collaborative Research Database Demo v2.0.1](https://physionet.org/content/eicu-crd-demo/2.0.1/) (PhysioNet, open access)
 - **Contents:** 2,520 ICU stays from 1,841 patients across 186 US hospitals (2014 to 2015)
 - **Tools:** SQLite in DBeaver for data preparation; Python (pandas, scikit-learn) for modeling
-- The database file is not included in this repo. Download the SQLite version from PhysioNet to rerun the queries.
+- The database file is not included in this repo (Physionet restrictions). Download the SQLite version from PhysioNet to rerun the queries.
 
 ## Cohort
 | Step | Stays/Patients |
